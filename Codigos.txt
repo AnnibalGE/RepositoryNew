@@ -1,0 +1,102 @@
+#include <Servo.h>
+
+Servo myservo1;
+Servo myservo2;
+
+int pos = 0; // posición inicial en 0 grados
+int botonEstado = 0;
+int ultimoEstado = 0;
+
+#define ledR 8 // LED rojo en pin 8
+#define ledV 7 // LED verde en pin 7
+
+int sensor; // Sensor en el pin AO 
+float temperatura; // Variable para almacenar el valor del sensor
+
+#define Trigger 11   // Pin digital para el Trigger del sensor
+#define Echo 10       // Pin digital para el Echo del sensor
+#define ledPIN 4
+
+void setup() {
+  myservo1.attach(9);
+  myservo2.attach(12);
+  pinMode(2, INPUT);
+  pinMode(ledR, OUTPUT);
+  pinMode(ledV, OUTPUT);
+  pinMode(Trigger, OUTPUT);
+  pinMode(ledPIN, OUTPUT);
+  pinMode(Echo, INPUT);
+  digitalWrite(Trigger, LOW);
+  digitalWrite(ledPIN, LOW);
+
+  // Inicialmente, colocar los servos en 0 grados al encenderse
+  myservo1.write(0);
+  myservo2.write(0);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  // Código para el control de los servos
+  botonEstado = digitalRead(2);
+
+  // Si el botón pasa de HIGH a LOW (flanco de bajada)
+  if (botonEstado == LOW && ultimoEstado == HIGH) {
+    if (pos == 0) {
+      // Si está en 0 grados, mover a 90 grados
+      myservo1.write(90);
+      myservo2.write(90);
+      pos = 90;
+    } else {
+      // Si no está en 0 grados, volver a 0 grados
+      myservo1.write(0);
+      myservo2.write(0);
+      pos = 0;
+    }
+  }
+
+  // Actualizar el último estado del botón
+  ultimoEstado = botonEstado;
+
+  // Código para el control de la temperatura
+  sensor = analogRead(A0);
+  temperatura = ((sensor * 5000.0) / 1023) / 10;
+
+  if (temperatura <= 35) {
+    digitalWrite(ledV, HIGH);
+    digitalWrite(ledR, LOW);
+  } else {
+    digitalWrite(ledR, HIGH);
+    digitalWrite(ledV, LOW);
+  }
+
+  Serial.print("Temperatura: ");
+  Serial.print(temperatura);
+  Serial.println(" °C");
+
+  // Código para el control de la proximidad
+  long t;
+  long d;
+
+  digitalWrite(Trigger, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trigger, LOW);
+
+  t = pulseIn(Echo, HIGH);
+  d = t / 59;
+
+  Serial.print("Distancia: ");
+  Serial.print(d);
+  Serial.println(" cm");
+
+  if (d < 100) {
+    digitalWrite(ledPIN, HIGH);
+    delay(1000);
+  } else {
+    digitalWrite(ledPIN, LOW);
+  }
+
+  delay(100);
+}
+
+
